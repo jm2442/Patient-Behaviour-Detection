@@ -1,6 +1,6 @@
 import pandas as pd 
-import matplotlib.pyplot as plt
-import numpy as np
+# import matplotlib.pyplot as plt
+# import numpy as np
 
 def number_to_string(num_list):
     "Basic function to aid with filename looping, converting single digit ints to 0 leading str versions"
@@ -16,7 +16,7 @@ def number_to_string(num_list):
 
 def main():
     # number of actions and subjects from the dataset
-    action_nos = list(range(1,17))
+    action_nos = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 14]
     subject_nos = list(range(1,11))
 
     # path to local storage directory
@@ -99,7 +99,7 @@ def main():
 
     print(df.shape)
 
-    df.to_csv('/Users/jamesmeyer/Projects/fyp-skeleton-data/extracted_filtered_skeleton_data.csv')
+    df.to_csv('/Users/jamesmeyer/Projects/fyp-skeleton-data/extracted_filtered_skeleton_data.csv', index=False)
 
     # plt.scatter(snapshot[:,0], snapshot[:,1])
     # plt.axis('scaled')
