@@ -1,5 +1,5 @@
-
-import pandas as pd 
+'''Script to extract and filter data'''
+import pandas as pd
 
 def number_to_string(num_list):
     '''Basic function to aid with filename looping,
@@ -23,7 +23,7 @@ def main():
     subject_nos = list(range(1,11))
 
     # path to local storage directory
-    path = '/Users/jamesmeyer/Projects/fyp-skeleton-data/'
+    file_path = '/Users/jamesmeyer/Projects/fyp-skeleton-data/'
 
     # list to append dicts to form df
     samples = []
@@ -40,7 +40,7 @@ def main():
             print(f'\nExtracting and filtering: {file_name}\n')
 
             # Open file as list of lines
-            file_object = open(f'{path}{file_name}', 'r').readlines()
+            file_object = open(f'{file_path}{file_name}', 'r').readlines()
 
             frame_per_rows = []
             frame = []
@@ -65,7 +65,7 @@ def main():
                     frame_count += 1
 
                 elif frame_count > -1:
-                    
+
                     # Issue with one file found a13-s06,
                     #  so this is to notify that this one frame
                     # was disregarded.
@@ -107,7 +107,6 @@ def main():
 
     print(df.shape)
 
-    file_path = '/Users/jamesmeyer/Projects/fyp-skeleton-data/'
     file_name = 'extracted_filtered_skeleton_data.csv'
     df.to_csv(f'{file_path}{file_name}',index=False)
 

@@ -2,7 +2,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def main():
+def overall():
     '''Run entire script'''
 
     # Read file
@@ -20,7 +20,7 @@ def main():
 
         fig, axs = plt.subplots(3)
 
-        fig.suptitle(f'Action: {label}')
+        fig.suptitle(f'Action: {action} - {label}')
         # fig.legend(subject_nos)
 
         for subject in subject_nos:
@@ -38,9 +38,8 @@ def main():
 
         lines, labels = fig.axes[-1].get_legend_handles_labels()
         fig.legend(lines, labels, loc = 'center right')
-        
 
     plt.show()
 
 if __name__ == "__main__":
-    main()
+    overall()

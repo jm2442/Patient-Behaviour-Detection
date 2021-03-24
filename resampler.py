@@ -16,7 +16,9 @@ def test():
     file_name = 'angles_skeleton_data.csv'
     df = pd.read_csv(f'{file_path}{file_name}',index_col=False)
 
-    test_df = df[['back_angle', 'left_angle', 'right_angle']].loc[(df['action'] == 3) & (df['subject'] == 3)]
+    test_df = df[['back_angle', 'left_angle', 'right_angle']].loc[
+        (df['action'] == 3) & (df['subject'] == 3)
+        ]
 
     data = np.array(test_df['back_angle'].tolist())
     x = np.linspace(0, 10, len(data), endpoint=False)
@@ -104,7 +106,6 @@ def main():
     print(resamp_df)
 
     # Output to csv
-    file_path = '/Users/jamesmeyer/Projects/fyp-skeleton-data/'
     file_name = 'resampled_angles_skeleton_data.csv'
     resamp_df.to_csv(f'{file_path}{file_name}', index=False)
 
