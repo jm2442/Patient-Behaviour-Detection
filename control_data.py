@@ -1,8 +1,10 @@
-''''''
+'''A script to retrieve and prep the data into a form ready for preprocessing steps'''
+
+
+from ast import literal_eval
 import os.path
 import pandas as pd
 import math
-from ast import literal_eval
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.signal as sps
