@@ -1,9 +1,10 @@
-import pandas as pd 
-# import matplotlib.pyplot as plt
-# import numpy as np
+'''Script to extract and filter data'''
+import pandas as pd
 
 def number_to_string(num_list):
-    "Basic function to aid with filename looping, converting single digit ints to 0 leading str versions"
+    '''Basic function to aid with filename looping,
+    converting single digit ints to 0 leading str versions'''
+
     str_list = []
     for num in num_list:
         if num < 10:
@@ -15,12 +16,14 @@ def number_to_string(num_list):
 
 
 def main():
+    '''Runs the entire script to extract and filter data from .txts'''
+
     # number of actions and subjects from the dataset
     action_nos = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 14]
     subject_nos = list(range(1,11))
 
     # path to local storage directory
-    path = '/Users/jamesmeyer/Projects/fyp-skeleton-data/'
+    file_path = '/Users/jamesmeyer/Projects/fyp-skeleton-data/'
 
     # list to append dicts to form df
     samples = []
@@ -32,18 +35,19 @@ def main():
 
             # concat filename for extraction
             file_name = f'a{action}_s{subject}_e01_skeleton.txt'
-            
+
             # For simple tracking purposes
             print(f'\nExtracting and filtering: {file_name}\n')
 
             # Open file as list of lines
-            file_object = open(f'{path}{file_name}', 'r').readlines()
+            file_object = open(f'{file_path}{file_name}', 'r').readlines()
 
             frame_per_rows = []
             frame = []
             frame_count = -1
 
-            # loop through lines and strip any trailing or leading whites spaces before splitting into list of lists
+            # loop through lines and strip any trailing or
+            # leading whites spaces before splitting into list of lists
             for line in file_object:
 
                 stripped_line = line.strip()
@@ -51,8 +55,9 @@ def main():
 
                 # Each new frame is noted by a single line 40 so this is used as the identifier
                 if line_list[0] == '40':
-                    
-                    # Prevent the initial two useless lines from each file causing an issue
+
+                    # Prevent the initial two useless lines
+                    # from each file causing an issue
                     if frame_count > -1:
                         frame_per_rows.append(frame)
                         frame = []
@@ -60,8 +65,10 @@ def main():
                     frame_count += 1
 
                 elif frame_count > -1:
-                    
-                    # Issue with one file found a13-s06, so this is to notify that this one frame was disregarded.
+
+                    # Issue with one file found a13-s06,
+                    #  so this is to notify that this one frame
+                    # was disregarded.
                     try:
 
                         if line_list[3] == '1':
@@ -75,7 +82,8 @@ def main():
                         continue
 
             frame_no = 1
-            # Loop through created list and convert info and extracted into dict to allow easy conversion to csv
+            # Loop through created list and convert info and
+            # extracted into dict to allow easy conversion to csv
             for sample in frame_per_rows:
 
                 df_dict = {
@@ -99,7 +107,8 @@ def main():
 
     print(df.shape)
 
-    df.to_csv('/Users/jamesmeyer/Projects/fyp-skeleton-data/extracted_filtered_skeleton_data.csv', index=False)
+    file_name = 'extracted_filtered_skeleton_data.csv'
+    df.to_csv(f'{file_path}{file_name}',index=False)
 
     # plt.scatter(snapshot[:,0], snapshot[:,1])
     # plt.axis('scaled')

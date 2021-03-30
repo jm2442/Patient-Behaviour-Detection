@@ -1,9 +1,11 @@
-import pandas as pd 
-import numpy as np
-from ast import literal_eval
+'''Script to transform 3D coords to 3 sets of angles'''
 import math
+from ast import literal_eval
+import pandas as pd
+import numpy as np
 
 def vectors_to_angle(vec1, vec2):
+    '''Takes to vectors and calculates the angle between them'''
 
     unit_vec1 = vec1 / np.linalg.norm(vec1)
     unit_vec2 = vec2 / np.linalg.norm(vec2)
@@ -13,9 +15,12 @@ def vectors_to_angle(vec1, vec2):
     return (angle/math.pi) * 180
 
 def main():
+    '''Runs the entire script to convert 3D positions to angles'''
 
     # Get csv file
-    df = pd.read_csv('/Users/jamesmeyer/Projects/fyp-skeleton-data/extracted_filtered_skeleton_data.csv', index_col=False)
+    file_path = '/Users/jamesmeyer/Projects/fyp-skeleton-data/'
+    file_name = 'extracted_filtered_skeleton_data.csv'
+    df = pd.read_csv(f'{file_path}{file_name}', index_col=False)
 
     back_angle = []
     left_angle = []
@@ -58,7 +63,9 @@ def main():
 
     print(df.head())
 
-    df.to_csv('/Users/jamesmeyer/Projects/fyp-skeleton-data/angles_skeleton_data.csv',index=False)
+    file_path = '/Users/jamesmeyer/Projects/fyp-skeleton-data/'
+    file_name = 'angles_skeleton_data.csv'
+    df.to_csv(f'{file_path}{file_name}',index=False)
 
 
 if __name__ == "__main__":
