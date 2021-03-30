@@ -1,8 +1,8 @@
 import pandas as pd 
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import numpy as np
 
-from derivatives import compute_angle_derivs
+from control_data import compute_angle_derivs
 
 def angle_derivs(angle_df):
     '''Script to calculate the deriv of the angles computed'''
@@ -28,7 +28,7 @@ def angle_derivs(angle_df):
 def main():
 
     # path to local storage directory
-    path = '/Users/jamesmeyer/University of Bath/Patient Simulator FYP - General/precursor-work/Seat movement and torque data/'
+    path = '/Users/jamesmeyer/University of Bath/Patient Simulator FYP - General/datasets/patient/dr-adlams-data/'
     
     file_name = 'DE250053 - (Callibrated - new method - compressed).csv'
 
@@ -62,10 +62,36 @@ def main():
     print(angle_derivs_df)
     
     # Read file
-    new_file_path = '/Users/jamesmeyer/Projects/fyp-skeleton-data/'
-    new_file_name = 'patient_angle_data.csv'
+    new_file_path = '/Users/jamesmeyer/University of Bath/Patient Simulator FYP - General/datasets/patient/'
+    new_file_name = 'patient_data.csv'
 
     angle_derivs_df.to_csv(f'{new_file_path}{new_file_name}', index=False)
+
+    fig, axs = plt.subplots(3, 3)
+
+    axs[0, 0].plot(angle_derivs_df['back_angle'])
+    axs[0, 0].set_ylabel('Angle (deg)')
+    axs[0, 0].set_title('Back')
+    axs[0, 1].plot(angle_derivs_df['left_angle'])
+    axs[0, 2].plot(angle_derivs_df['right_angle'])
+
+    deriv = 1
+
+    axs[1, 0].plot(angle_derivs_df[f'back_{deriv}der'])
+    axs[1, 1].plot(angle_derivs_df[f'left_{deriv}der'])
+    axs[1, 0].set_ylabel('1st Deriv Angle (deg/s)')
+    axs[0, 1].set_title('Left')
+    axs[1, 2].plot(angle_derivs_df[f'right_{deriv}der'])
+
+    deriv = 2
+
+    axs[2, 0].plot(angle_derivs_df[f'back_{deriv}der'])
+    axs[2, 1].plot(angle_derivs_df[f'left_{deriv}der'])
+    axs[2, 2].plot(angle_derivs_df[f'right_{deriv}der'])
+    axs[2, 0].set_ylabel('2nd Deriv Angle (deg/s^2)')
+    axs[0, 2].set_title('Right')
+
+    plt.show()
 
 if __name__ == "__main__":
     main()

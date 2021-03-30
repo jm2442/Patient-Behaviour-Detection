@@ -328,7 +328,7 @@ def derivatives(file_path, save_on):
     print(angle_derivs_df)
 
     if save_on:
-        new_file_name = 'angles_derivs_data.csv'
+        new_file_name = 'control_data.csv'
         if os.path.exists(f'{file_path}{new_file_name}'):
             print("csv created already, delete file if new version required")
         else:
@@ -396,7 +396,7 @@ def main():
     skel_angles_df = coords_to_angles(dest_file_path, file_save)
     resamp_angles_df = resampler(30, 20, dest_file_path, file_save)
     angles_df = derivatives(dest_file_path, file_save)
-    display_deriv(angles_df)
+    # display_deriv(angles_df)
 
 if __name__ == "__main__":
     main()
