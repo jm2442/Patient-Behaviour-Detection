@@ -1,9 +1,8 @@
 '''A script to retrieve and prep the patient data into a form ready for preprocessing steps'''
 
 import os.path
-import pandas as pd 
+import pandas as pd
 import matplotlib.pyplot as plt
-
 from control_data import compute_angle_derivs
 
 def angle_derivs(angle_df):
