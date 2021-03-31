@@ -1,5 +1,6 @@
 import pandas as pd 
 import matplotlib.pyplot as plt
+import os.path
 import numpy as np
 
 from control_data import compute_angle_derivs
@@ -22,20 +23,21 @@ def angle_derivs(angle_df):
 
     angle_derivs_df = angle_derivs_df.append(angle_df)
 
+    print(angle_derivs_df)
+
     return angle_derivs_df
 
+def data_extractor(file_path):
 
-def main():
-
-    # path to local storage directory
-    path = '/Users/jamesmeyer/University of Bath/Patient Simulator FYP - General/datasets/patient/dr-adlams-data/'
-    
     file_name = 'DE250053 - (Callibrated - new method - compressed).csv'
 
-    df = pd.read_csv(f'{path}{file_name}', index_col=False, skiprows=[0,1,2,4])
+    df = pd.read_csv(f'{file_path}{file_name}', index_col=False, skiprows=[0,1,2,4])
 
     print(df)
-    print(df.dtypes)
+
+    return df
+
+def data_filterer(df):
 
     keep_cols = ["Backrest Angle / Deg", "Left Hip Angle / Deg", "Right Hip Angle / Deg"]
 
@@ -49,9 +51,9 @@ def main():
 
     print(angle_df)
 
-    angle_derivs_df = angle_derivs(angle_df)
+    return angle_df
 
-    print(angle_derivs_df)
+def format_to_control(angle_derivs_df, d_file_path, save_on):
 
     extra_cols = ["action", "subject", "frame"]
 
@@ -60,13 +62,18 @@ def main():
     angle_derivs_df = extra_cols_df.append(angle_derivs_df, ignore_index=True)
 
     print(angle_derivs_df)
-    
-    # Read file
-    new_file_path = '/Users/jamesmeyer/University of Bath/Patient Simulator FYP - General/datasets/patient/'
-    new_file_name = 'patient_data.csv'
 
-    angle_derivs_df.to_csv(f'{new_file_path}{new_file_name}', index=False)
+    if save_on:
+        new_file_name = 'patient_data.csv'
+        if os.path.exists(f'{d_file_path}{new_file_name}'):
+            print("csv created already, delete file if new version required")
+        else:
+            angle_derivs_df.to_csv(f'{d_file_path}{new_file_name}',index=False)
+            print(f'Saved a copy as csv in :{d_file_path}')
 
+    return angle_derivs_df
+
+def display_derivs(angle_derivs_df):
     fig, axs = plt.subplots(3, 3)
 
     axs[0, 0].plot(angle_derivs_df['back_angle'])
@@ -92,6 +99,27 @@ def main():
     axs[0, 2].set_title('Right')
 
     plt.show()
+
+
+
+def main():
+
+    # path to local storage directory
+    source_file_path = '/Users/jamesmeyer/University of Bath/Patient Simulator FYP - General/datasets/patient/dr-adlams-data/'
+    
+    df = data_extractor(source_file_path)
+
+    angle_df = data_filterer(df)
+
+    angle_derivs_df = angle_derivs(angle_df)
+
+    display_derivs(angle_derivs_df)
+
+    # Read file
+    dest_file_path = '/Users/jamesmeyer/University of Bath/Patient Simulator FYP - General/datasets/patient/'
+
+    control_df = format_to_control(angle_derivs_df, dest_file_path, True)
+
 
 if __name__ == "__main__":
     main()
