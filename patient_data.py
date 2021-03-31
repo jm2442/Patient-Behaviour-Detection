@@ -1,18 +1,13 @@
+'''A script to retrieve and prep the patient data into a form ready for preprocessing steps'''
+
+import os.path
 import pandas as pd 
 import matplotlib.pyplot as plt
-import os.path
-import numpy as np
 
 from control_data import compute_angle_derivs
 
 def angle_derivs(angle_df):
     '''Script to calculate the deriv of the angles computed'''
-
-    # # Read file
-    # file_path = '/Users/jamesmeyer/Projects/fyp-skeleton-data/'
-    # file_name = 'resampled_angles_skeleton_data.csv'
-    # df = pd.read_csv(f'{file_path}{file_name}', index_col=False)
-
     angle_derivs_df = pd.DataFrame()
 
     for deriv in [1,2]:
@@ -28,7 +23,7 @@ def angle_derivs(angle_df):
     return angle_derivs_df
 
 def data_extractor(file_path):
-
+    '''Script to extract csv into df'''
     file_name = 'DE250053 - (Callibrated - new method - compressed).csv'
 
     df = pd.read_csv(f'{file_path}{file_name}', index_col=False, skiprows=[0,1,2,4])
@@ -38,7 +33,7 @@ def data_extractor(file_path):
     return df
 
 def data_filterer(df):
-
+    '''Script to only extract the angles from the measurement sensors and rename the columns'''
     keep_cols = ["Backrest Angle / Deg", "Left Hip Angle / Deg", "Right Hip Angle / Deg"]
 
     angle_df = df[keep_cols]
@@ -54,6 +49,7 @@ def data_filterer(df):
     return angle_df
 
 def format_to_control(angle_derivs_df, d_file_path, save_on):
+    '''Script to add columns to make csv similar to control data path'''
 
     extra_cols = ["action", "subject", "frame"]
 
@@ -74,7 +70,8 @@ def format_to_control(angle_derivs_df, d_file_path, save_on):
     return angle_derivs_df
 
 def display_derivs(angle_derivs_df):
-    fig, axs = plt.subplots(3, 3)
+    '''Script to plot the deriv of the angles computed'''
+    _, axs = plt.subplots(3, 3)
 
     axs[0, 0].plot(angle_derivs_df['back_angle'])
     axs[0, 0].set_ylabel('Angle (deg)')
@@ -100,10 +97,8 @@ def display_derivs(angle_derivs_df):
 
     plt.show()
 
-
-
 def main():
-
+    '''Run the script'''
     # path to local storage directory
     source_file_path = '/Users/jamesmeyer/University of Bath/Patient Simulator FYP - General/datasets/patient/dr-adlams-data/'
     
@@ -115,13 +110,10 @@ def main():
 
     display_derivs(angle_derivs_df)
 
-    # Read file
+    # Output file path
     dest_file_path = '/Users/jamesmeyer/University of Bath/Patient Simulator FYP - General/datasets/patient/'
 
-    control_df = format_to_control(angle_derivs_df, dest_file_path, True)
-
+    _ = format_to_control(angle_derivs_df, dest_file_path, True)
 
 if __name__ == "__main__":
     main()
-
-# /Users/jamesmeyer/University\ of\ Bath/Patient\ Simulator\ FYP\ -\ General/precursor-work/Seat\ movement\ and\ torque\ data/DE250053\ -\ \(Callibrated\ -\ new\ method\ -\ compressed\).csv 

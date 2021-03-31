@@ -1,10 +1,9 @@
-'''A script to retrieve and prep the data into a form ready for preprocessing steps'''
-
+'''A script to retrieve and prep the control data into a form ready for preprocessing steps'''
 
 from ast import literal_eval
 import os.path
-import pandas as pd
 import math
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.signal as sps
@@ -300,7 +299,7 @@ def derivatives(file_path, save_on):
     file_name = 'resampled_angles_data.csv'
     df = pd.read_csv(f'{file_path}{file_name}', index_col=False)
 
-    print(f"\nCalculating the first and second derivatives for the angles\n")
+    print("\nCalculating the first and second derivatives for the angles\n")
 
     # Loop through each action and plot the angles
     action_nos = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 14]
@@ -324,7 +323,7 @@ def derivatives(file_path, save_on):
             angle_derivs_df = angle_derivs_df.append(angle_df)
 
    
-    print(f"First and second derivatives of angles")
+    print("First and second derivatives of angles")
     print(angle_derivs_df)
 
     if save_on:
@@ -343,7 +342,6 @@ def display_deriv(df):
     # Loop through each action and plot the angles
     action_nos = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 14]
     subject_nos = list(range(1,11))
-    angles = ['back_angle', 'left_angle', 'right_angle']
     action_type = ['Drinking', 'Eating', 'Reading', 'Phoning', 'Writing', 'Laptop', 'Cheering', 'Nothing', 'Throwing a ball', 'Playing a video game', 'Playing a guitar']
 
     for action, label in zip(action_nos, action_type):
@@ -384,6 +382,7 @@ def display_deriv(df):
     plt.show()
 
 def main():
+    '''Run the script'''
 
     # path to local storage directory
     source_file_path = '/Users/jamesmeyer/University of Bath/Patient Simulator FYP - General/datasets/control/sitting-skeleton-txts/'
@@ -392,11 +391,11 @@ def main():
 
     file_save = True
 
-    filt_skel_coords_df = txt_extract_and_filter(source_file_path, dest_file_path, file_save)
-    skel_angles_df = coords_to_angles(dest_file_path, file_save)
-    resamp_angles_df = resampler(30, 20, dest_file_path, file_save)
+    _ = txt_extract_and_filter(source_file_path, dest_file_path, file_save)
+    _ = coords_to_angles(dest_file_path, file_save)
+    _ = resampler(30, 20, dest_file_path, file_save)
     angles_df = derivatives(dest_file_path, file_save)
-    # display_deriv(angles_df)
+    display_deriv(angles_df)
 
 if __name__ == "__main__":
     main()
