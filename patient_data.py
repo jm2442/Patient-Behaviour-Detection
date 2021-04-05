@@ -73,8 +73,6 @@ def format_to_control(angle_derivs_df, d_file_path, save_on):
 def normaliser(df):
     '''Script to individually normalise the angles computed for each subject's action'''
 
-
-
     angles = ['back_angle', 'left_angle', 'right_angle']
 
     for angle in angles:
@@ -85,6 +83,15 @@ def normaliser(df):
 
     return df
 
+def backlock_remover(df, start_index, end_index):
+
+    drop_range = list(range(start_index, end_index+1))
+    
+    df.drop(df.index[drop_range], inplace=True)
+
+    df.reset_index(inplace=True)
+
+    return df
 
 def display_derivs(angle_derivs_df):
     '''Script to plot the deriv of the angles computed'''
@@ -123,7 +130,9 @@ def main():
 
     angle_df = data_filterer(df)
 
-    norm_df = normaliser(angle_df)
+    no_lock_df = backlock_remover(angle_df, 25000, 48100)
+
+    norm_df = normaliser(no_lock_df)
 
     angle_derivs_df = angle_derivs(norm_df)
 
