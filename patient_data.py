@@ -3,7 +3,9 @@
 import os.path
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 from control_data import compute_angle_derivs
+from sklearn.preprocessing import MinMaxScaler
 
 def angle_derivs(angle_df):
     '''Script to calculate the deriv of the angles computed'''
@@ -68,6 +70,22 @@ def format_to_control(angle_derivs_df, d_file_path, save_on):
 
     return angle_derivs_df
 
+def normaliser(df):
+    '''Script to individually normalise the angles computed for each subject's action'''
+
+
+
+    angles = ['back_angle', 'left_angle', 'right_angle']
+
+    for angle in angles:
+
+        scaler = MinMaxScaler()
+        temp_angle = scaler.fit_transform(np.array(df[angle]).reshape(-1, 1))
+        df[angle] = temp_angle
+
+    return df
+
+
 def display_derivs(angle_derivs_df):
     '''Script to plot the deriv of the angles computed'''
     _, axs = plt.subplots(3, 3)
@@ -105,7 +123,9 @@ def main():
 
     angle_df = data_filterer(df)
 
-    angle_derivs_df = angle_derivs(angle_df)
+    norm_df = normaliser(angle_df)
+
+    angle_derivs_df = angle_derivs(norm_df)
 
     display_derivs(angle_derivs_df)
 
