@@ -7,7 +7,6 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.signal as sps
-from sklearn.preprocessing import MinMaxScaler
 
 def number_to_string(num_list):
     '''Basic function to aid with filename looping,
@@ -297,7 +296,7 @@ def compute_angle_derivs(angle_df, window_size, polyorder, deriv):
 def derivatives(file_path, save_on):
     '''Script to calculate the deriv of the angles computed'''
 
-    file_name = 'normal_data.csv'
+    file_name = 'resampled_angles_data.csv'
     df = pd.read_csv(f'{file_path}{file_name}', index_col=False)
 
     print("\nCalculating the first and second derivatives for the angles\n")
@@ -436,12 +435,11 @@ def main():
 
     file_save = True
 
-    # _ = txt_extract_and_filter(source_file_path, dest_file_path, file_save)
-    # _ = coords_to_angles(dest_file_path, file_save)
-    resamp_angle_df = resampler(30, 20, dest_file_path, file_save)
-    normal_angle_df = normaliser(resamp_angle_df, dest_file_path, file_save)
-    patient_df = derivatives(dest_file_path, file_save)
-    display_deriv(patient_df)
+    _ = txt_extract_and_filter(source_file_path, dest_file_path, file_save)
+    _ = coords_to_angles(dest_file_path, file_save)
+    _ = resampler(30, 20, dest_file_path, file_save)
+    angles_df = derivatives(dest_file_path, file_save)
+    display_deriv(angles_df)
 
 if __name__ == "__main__":
     main()
