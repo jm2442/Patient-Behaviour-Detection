@@ -409,7 +409,6 @@ def normaliser(df, file_path, save_on):
                 scaler = MinMaxScaler()
                 temp_angle = scaler.fit_transform(np.array(angles_df.loc[:, (angle)]).reshape(-1, 1))
                 angles_df[angle] = temp_angle
-                print(temp_angle)
 
             normal_angles_df = normal_angles_df.append(angles_df)
 
