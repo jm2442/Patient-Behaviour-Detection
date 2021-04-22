@@ -4,6 +4,7 @@ import os.path
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import datetime
 from control_data import compute_angle_derivs
 from sklearn.preprocessing import MinMaxScaler
 
@@ -29,13 +30,13 @@ def data_extractor(file_path):
 
     df = pd.read_csv(f'{file_path}{file_name}', index_col=False, skiprows=[0,1,2,4])
 
-    print(df)
+    print(df.dtypes)
 
     return df
 
 def data_filterer(df):
     '''Script to only extract the angles from the measurement sensors and rename the columns'''
-    keep_cols = ["Backrest Angle / Deg", "Left Hip Angle / Deg", "Right Hip Angle / Deg"]
+    keep_cols = ["Backrest Angle / Deg", "Left Hip Angle / Deg", "Right Hip Angle / Deg", "Date"]
 
     angle_df = df[keep_cols]
 
@@ -45,11 +46,14 @@ def data_filterer(df):
         "Right Hip Angle / Deg": "right_angle"
         })
 
+    angle_df.loc[:,'Date'] = pd.to_datetime(df.Date.astype(str)+' '+df.Time.astype(str))
+
     print(angle_df)
+    print(angle_df.dtypes)
 
     return angle_df
 
-def format_to_control(angle_derivs_df, d_file_path, save_on):
+def format_to_control(angle_derivs_df, d_file_path, save_on, backlock_on):
     '''Script to add columns to make csv similar to control data path'''
 
     extra_cols = ["action", "subject", "frame"]
@@ -61,11 +65,14 @@ def format_to_control(angle_derivs_df, d_file_path, save_on):
     print(angle_derivs_df)
 
     if save_on:
-        new_file_name = 'patient_data.csv'
+        if backlock_on == False:
+            new_file_name = 'patient_data.csv'
+        else:
+            new_file_name = 'patient_data_wlock.csv'
         if os.path.exists(f'{d_file_path}{new_file_name}'):
             print("csv created already, delete file if new version required")
         else:
-            angle_derivs_df.to_csv(f'{d_file_path}{new_file_name}',index=False)
+            angle_derivs_df.to_csv(f'{d_file_path}{new_file_name}',index=False, date_format="%Y-%m-%d %H:%M:%S.%f")
             print(f'Saved a copy as csv in :{d_file_path}')
 
     return angle_derivs_df
@@ -83,13 +90,21 @@ def normaliser(df):
 
     return df
 
-def backlock_remover(df, start_index, end_index):
+def backlock_remover(df, start_index, end_index, backlock_on):
 
-    drop_range = list(range(start_index, end_index+1))
-    
-    df.drop(df.index[drop_range], inplace=True)
+    if backlock_on ==False:
+        drop_range = list(range(start_index, end_index+1))
+        df.drop(df.index[drop_range], inplace=True)
+        df.reset_index(inplace=True)
 
-    df.reset_index(inplace=True)
+    date = df.loc[:,'Date'][0]
+    dtime = [date]
+    for _ in range(df.shape[0]-1):
+        date += datetime.timedelta(milliseconds=50)
+        dtime.append(date)
+
+    df.loc[:,'datetime'] = dtime
+    df.drop(['Date'], axis=1 , inplace=True)
 
     return df
 
@@ -124,24 +139,27 @@ def display_derivs(angle_derivs_df):
 def main():
     '''Run the script'''
     # path to local storage directory
+    backlock_on = False
     source_file_path = '/Users/jamesmeyer/University of Bath/Patient Simulator FYP - General/datasets/patient/dr-adlams-data/'
     
     df = data_extractor(source_file_path)
 
     angle_df = data_filterer(df)
 
-    no_lock_df = backlock_remover(angle_df, 25000, 48100)
-
+    no_lock_df = backlock_remover(angle_df, 25000, 51000, backlock_on)
     norm_df = normaliser(no_lock_df)
 
-    angle_derivs_df = angle_derivs(norm_df)
+    norm_df = normaliser(angle_df)
 
-    display_derivs(angle_derivs_df)
+    norm_df.plot(subplots=True, figsize=(16, 16), data=norm_df.loc[:,('left_angle', 'back_angle')], kind='line', x='datetime')
 
-    # Output file path
-    dest_file_path = '/Users/jamesmeyer/University of Bath/Patient Simulator FYP - General/datasets/patient/'
+    # angle_derivs_df = angle_derivs(norm_df)
 
-    _ = format_to_control(angle_derivs_df, dest_file_path, True)
+    # display_derivs(angle_derivs_df)
 
+    # # Output file path
+    # dest_file_path = '/Users/jamesmeyer/University of Bath/Patient Simulator FYP - General/datasets/patient/'
+
+    # _ = format_to_control(angle_derivs_df, dest_file_path, False, backlock_on)
 if __name__ == "__main__":
     main()

@@ -437,10 +437,10 @@ def main():
 
     file_save = True
 
-    # _ = txt_extract_and_filter(source_file_path, dest_file_path, file_save)
-    # _ = coords_to_angles(dest_file_path, file_save)
+    _ = txt_extract_and_filter(source_file_path, dest_file_path, file_save)
+    _ = coords_to_angles(dest_file_path, file_save)
     resamp_angle_df = resampler(30, 20, dest_file_path, file_save)
-    normal_angle_df = normaliser(resamp_angle_df, dest_file_path, file_save)
+    _ = normaliser(resamp_angle_df, dest_file_path, file_save)
     patient_df = derivatives(dest_file_path, file_save)
     display_deriv(patient_df)
 
