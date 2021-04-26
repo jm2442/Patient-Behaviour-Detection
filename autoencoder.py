@@ -1,35 +1,37 @@
 # # Import required libraries
-import numpy as np
+# import numpy as np
 from keras.models import Sequential
 from keras.layers import LSTM, Input, Dropout
 from keras.layers import Dense
 from keras.layers import RepeatVector
 from keras.layers import TimeDistributed
-from keras.callbacks import EarlyStopping
+# from keras.callbacks import EarlyStopping
 # from keras.utils.vis_utils import plot_model
-import pandas as pd
-from matplotlib import pyplot as plt
+# import pandas as pd
+# from matplotlib import pyplot as plt
 # from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from keras.models import Model, load_model
-import seaborn as sns
-from scipy import integrate
-from fastdtw import fastdtw
-from scipy.spatial.distance import euclidean
+# import seaborn as sns
+# from scipy import integrate
+# from fastdtw import fastdtw
+# from scipy.spatial.distance import euclidean
 
 import os.path
+from utils import history_plot_and_save
 
 # import tqdm
 
 # import datetime
 
 class AutoEncoder():
-    def __init__(self, layer_one, layer_two, train, model_file,callback):
+    def __init__(self, layer_one, layer_two, train, model_file, callback, diag_file_path):
 
         self.layer_one = layer_one
         self.layer_two = layer_two
         self.train = train
         self.model_file = model_file
         self.callback = callback
+        self.diag_file_path = diag_file_path
 
         print(f"Checking for {self.model_file}")
 
@@ -43,6 +45,9 @@ class AutoEncoder():
 
         if self.train_req:
             self.history = self.train_model()
+            self.history_plot = history_plot_and_save(self.history, self.model_file, self.diag_file_path)
+        else:
+            self.history_plot = None
 
     def build_one_layer(self):
         print("\nSingle layer model built")

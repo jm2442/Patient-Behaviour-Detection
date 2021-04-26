@@ -8,6 +8,7 @@ import datetime
 from control_data import compute_angle_derivs
 from sklearn.preprocessing import MinMaxScaler
 
+
 def angle_derivs(angle_df):
     '''Script to calculate the deriv of the angles computed'''
     angle_derivs_df = pd.DataFrame()
@@ -136,6 +137,14 @@ def display_derivs(angle_derivs_df):
 
     plt.show()
 
+def period_start_end(start_min, stop_min):
+    '''Takes a start and end min and returns a datetime tuple for graph production'''
+
+    tstart = datetime.datetime(2011, 12, 1, 11, start_min)
+    tend = datetime.datetime(2011, 12, 1, 11, stop_min)
+
+    return (tstart, tend)
+
 def main():
     '''Run the script'''
     # path to local storage directory
@@ -147,11 +156,32 @@ def main():
     angle_df = data_filterer(df)
 
     no_lock_df = backlock_remover(angle_df, 25000, 51000, backlock_on)
+
+
+    # print(no_lock_df[['back_angle', 'left_angle', 'right_angle']].describe())
+
+
     norm_df = normaliser(no_lock_df)
 
-    norm_df = normaliser(angle_df)
+    axes = norm_df[['back_angle', 'left_angle', 'right_angle', 'datetime']].plot(subplots=True, kind='line', x='datetime', legend=False, sharey=True)
+    axes[0].set_title("Normalised Patient Data")
+    axes[0].set_ylabel("Norm. Back Angle")
+    axes[0].grid(True, which='both')
 
-    norm_df.plot(subplots=True, figsize=(16, 16), data=norm_df.loc[:,('left_angle', 'back_angle')], kind='line', x='datetime')
+    tstart = datetime.datetime(2011, 12, 1, 11, 10)
+    axes[0].fill_between((tstart,tend), 0, 1, facecolor='green', alpha=0.2)
+
+    axes[1].set_ylabel("Norm. Left Angle")
+    axes[1].grid(True, which='both')
+    axes[2].set_ylabel("Norm. Right Angle")
+    axes[2].set_xlabel("01/12/2011 - Time")
+    axes[2].grid(True, which='both')
+    plt.subplots_adjust(wspace=0.05, hspace=0.05, top=0.95, right=0.98, bottom=0.08, left=0.05)
+    plt.show()
+
+    # norm_df = normaliser(angle_df)
+
+    
 
     # angle_derivs_df = angle_derivs(norm_df)
 
@@ -161,5 +191,6 @@ def main():
     # dest_file_path = '/Users/jamesmeyer/University of Bath/Patient Simulator FYP - General/datasets/patient/'
 
     # _ = format_to_control(angle_derivs_df, dest_file_path, False, backlock_on)
+
 if __name__ == "__main__":
     main()

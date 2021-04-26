@@ -435,14 +435,87 @@ def main():
 
     dest_file_path = '/Users/jamesmeyer/University of Bath/Patient Simulator FYP - General/datasets/control/'
 
-    file_save = True
+    file_save = False
 
-    _ = txt_extract_and_filter(source_file_path, dest_file_path, file_save)
-    _ = coords_to_angles(dest_file_path, file_save)
+    # _ = txt_extract_and_filter(source_file_path, dest_file_path, file_save)
+    # - = coords_to_angles(dest_file_path, file_save)
     resamp_angle_df = resampler(30, 20, dest_file_path, file_save)
-    _ = normaliser(resamp_angle_df, dest_file_path, file_save)
-    patient_df = derivatives(dest_file_path, file_save)
-    display_deriv(patient_df)
+    df = normaliser(resamp_angle_df, dest_file_path, file_save)
+    # patient_df = derivatives(dest_file_path, file_save)
+    # display_deriv(patient_df)
+
+    # Loop through each action and plot the angles
+    action_nos = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 14]
+    subject_nos = list(range(1,11))
+    action_type = ['Drinking', 'Eating', 'Reading', 'Phoning', 'Writing', 'Laptop', 'Cheering', 'Nothing', 'Throwing a ball', 'Playing a video game', 'Playing a guitar']
+    colours = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+
+    
+            
+    fig, axs = plt.subplots(3, 1, sharey=True)
+    i = 0
+    for action, label in zip(action_nos, action_type):
+    # fig.suptitle("MSR DailyActivity3D Processed Angles - Control Data")
+        for subject in subject_nos:
+
+            new_df = df.loc[
+                (df['action'] == action) & (df['subject'] == subject)]
+
+        
+            axs[0].set_title("Normalised Control Data")
+
+            axs[0].plot(new_df['back_angle'])
+            axs[0].set_ylabel('Norm. Back Angle')
+            axs[1].plot(new_df['left_angle'])
+            axs[1].set_ylabel('Norm. Left Angle')
+
+            if i >= 100:
+                axs[2].plot(new_df['right_angle'], color=colours[subject-1], label=f'Subject {subject}')
+            else:
+                axs[2].plot(new_df['right_angle'], color=colours[subject-1])
+            
+            axs[2].set_ylabel('Norm. Right Angle')
+
+            i += 1
+            axs[0].grid(True, which='both')
+            axs[1].grid(True, which='both')
+            axs[2].set_xlabel("Index")
+            axs[2].grid(True, which='both')
+
+
+            # deriv = 1
+
+            # axs[1, 0].plot(angle_df[f'back_{deriv}der'])
+            # axs[1, 1].plot(angle_df[f'left_{deriv}der'])
+            # axs[1, 0].set_ylabel('1st Deriv Angle (deg/s)')
+            # axs[0, 1].set_title('Left')
+            # axs[1, 2].plot(angle_df[f'right_{deriv}der'])
+
+            # deriv = 2
+
+            # axs[2, 0].plot(angle_df[f'back_{deriv}der'])
+            # axs[2, 1].plot(angle_df[f'left_{deriv}der'])
+            # axs[2, 2].plot(angle_df[f'right_{deriv}der'], label=f'Subject {subject}')
+            # axs[2, 0].set_ylabel('2nd Deriv Angle (deg/s^2)')
+            # axs[0, 2].set_title('Right')
+    plt.subplots_adjust(wspace=0.05, hspace=0.05, top=0.90, right=0.98, bottom=0.08, left=0.05)
+    lines, labels = fig.axes[-1].get_legend_handles_labels()
+    fig.legend(lines, labels, loc = 'center right')
+
+
+        
+
+    plt.show()
+
+    # print(angle_df)
+
+
+    # axes = angle_df[['back_angle', 'left_angle', 'right_angle', 'datetime']].plot(subplots=True, kind='line', x='datetime', legend=False) 
+    # axes[0].set_title("Processed MSR DailyActivity3D Angle - Control Data")
+
+  
+
+    # plt.show()
 
 if __name__ == "__main__":
     main()
