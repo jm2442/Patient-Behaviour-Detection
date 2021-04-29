@@ -5,7 +5,7 @@ from keras.layers import LSTM, Input, Dropout
 from keras.layers import Dense
 from keras.layers import RepeatVector
 from keras.layers import TimeDistributed
-# from keras.callbacks import EarlyStopping
+from keras.callbacks import EarlyStopping
 # from keras.utils.vis_utils import plot_model
 # import pandas as pd
 # from matplotlib import pyplot as plt
@@ -24,13 +24,13 @@ from utils import history_plot_and_save
 # import datetime
 
 class AutoEncoder():
-    def __init__(self, layer_one, layer_two, train, model_file, callback, diag_file_path):
+    def __init__(self, layer_one, layer_two, train, patience, model_file, diag_file_path):
 
         self.layer_one = layer_one
         self.layer_two = layer_two
         self.train = train
+        self.patience = patience
         self.model_file = model_file
-        self.callback = callback
         self.diag_file_path = diag_file_path
 
         print(f"Checking for {self.model_file}")
@@ -90,7 +90,8 @@ class AutoEncoder():
 
     def train_model(self):
         print("\nTraining model")
-        history = self.model.fit(self.train, self.train, epochs=50, batch_size=32, validation_split=0.1, verbose=1, callbacks=[self.callback])
+        callback = EarlyStopping(monitor='loss', patience=self.patience, min_delta=1e-3)
+        history = self.model.fit(self.train, self.train, epochs=50, batch_size=32, validation_split=0.1, verbose=1, callbacks=[callback])
 
         self.model.save(self.model_file)
         print(f"\nSaved model as: {self.model_file}")

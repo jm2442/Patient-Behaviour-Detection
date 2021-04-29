@@ -382,7 +382,6 @@ def display_deriv(df):
 
     plt.show()
 
-
 def normaliser(df, file_path, save_on):
     '''Script to individually normalise the angles computed for each subject's action'''
 
@@ -427,22 +426,7 @@ def normaliser(df, file_path, save_on):
 
     return normal_angles_df
 
-def main():
-    '''Run the script'''
-
-    # path to local storage directory
-    source_file_path = '/Users/jamesmeyer/University of Bath/Patient Simulator FYP - General/datasets/control/sitting-skeleton-txts/'
-
-    dest_file_path = '/Users/jamesmeyer/University of Bath/Patient Simulator FYP - General/datasets/control/'
-
-    file_save = False
-
-    # _ = txt_extract_and_filter(source_file_path, dest_file_path, file_save)
-    # - = coords_to_angles(dest_file_path, file_save)
-    resamp_angle_df = resampler(30, 20, dest_file_path, file_save)
-    df = normaliser(resamp_angle_df, dest_file_path, file_save)
-    # patient_df = derivatives(dest_file_path, file_save)
-    # display_deriv(patient_df)
+def plot_norm_data(df, diagram_folder, save_new=True):
 
     # Loop through each action and plot the angles
     action_nos = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 14]
@@ -450,12 +434,10 @@ def main():
     action_type = ['Drinking', 'Eating', 'Reading', 'Phoning', 'Writing', 'Laptop', 'Cheering', 'Nothing', 'Throwing a ball', 'Playing a video game', 'Playing a guitar']
     colours = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
 
-    
-            
-    fig, axs = plt.subplots(3, 1, sharey=True)
+    fig, axs = plt.subplots(3, 1, sharey=True, figsize=(16, 8))
     i = 0
     for action, label in zip(action_nos, action_type):
-    # fig.suptitle("MSR DailyActivity3D Processed Angles - Control Data")
+        
         for subject in subject_nos:
 
             new_df = df.loc[
@@ -466,6 +448,7 @@ def main():
 
             axs[0].plot(new_df['back_angle'])
             axs[0].set_ylabel('Norm. Back Angle')
+
             axs[1].plot(new_df['left_angle'])
             axs[1].set_ylabel('Norm. Left Angle')
 
@@ -475,37 +458,107 @@ def main():
                 axs[2].plot(new_df['right_angle'], color=colours[subject-1])
             
             axs[2].set_ylabel('Norm. Right Angle')
+            axs[2].set_xlabel("Index")
 
             i += 1
             axs[0].grid(True, which='both')
             axs[1].grid(True, which='both')
-            axs[2].set_xlabel("Index")
             axs[2].grid(True, which='both')
 
-
-            # deriv = 1
-
-            # axs[1, 0].plot(angle_df[f'back_{deriv}der'])
-            # axs[1, 1].plot(angle_df[f'left_{deriv}der'])
-            # axs[1, 0].set_ylabel('1st Deriv Angle (deg/s)')
-            # axs[0, 1].set_title('Left')
-            # axs[1, 2].plot(angle_df[f'right_{deriv}der'])
-
-            # deriv = 2
-
-            # axs[2, 0].plot(angle_df[f'back_{deriv}der'])
-            # axs[2, 1].plot(angle_df[f'left_{deriv}der'])
-            # axs[2, 2].plot(angle_df[f'right_{deriv}der'], label=f'Subject {subject}')
-            # axs[2, 0].set_ylabel('2nd Deriv Angle (deg/s^2)')
-            # axs[0, 2].set_title('Right')
     plt.subplots_adjust(wspace=0.05, hspace=0.05, top=0.90, right=0.98, bottom=0.08, left=0.05)
     lines, labels = fig.axes[-1].get_legend_handles_labels()
     fig.legend(lines, labels, loc = 'center right')
 
 
+    filename = 'control-norm.png'
+    full_path = f'{diagram_folder}{filename}'
+
+    if save_new:
+        i = 0
+        while os.path.isfile(full_path):
+            i += 1
+            diag_file_name = f'control-norm-{i}.png'
+            full_path = f'{diagram_folder}{diag_file_name}'
+
+
+    plt.savefig(full_path, bbox_inches='tight', dpi=300)
+    plt.show()
+
+def plot_control_actions(df, diagram_folder, save_new=True):
+
+    # Loop through each action and plot the angles
+    action_nos = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 14]
+    subject_nos = list(range(1,11))
+    action_type = ['Drinking', 'Eating', 'Reading', 'Phoning', 'Writing', 'Laptop', 'Cheering', 'Nothing', 'Throwing a ball', 'Playing a video game', 'Playing a guitar']
+
+    for action, label in zip(action_nos, action_type):
+
+        fig, axs = plt.subplots(3, 1, sharey=True, figsize=(8, 8))
+        fig.suptitle("MSR DailyActivity3D Processed Angles - Control Data")
+
+        for subject in subject_nos:
+
+            new_df = df.loc[
+                (df['action'] == action) & (df['subject'] == subject)]
+
         
+            axs[0].set_title(f"Control Data - Action: {label}")
+
+            axs[0].plot(new_df['back_angle'])
+            axs[0].set_ylabel('Norm. Back Angle')
+
+            axs[1].plot(new_df['left_angle'])
+            axs[1].set_ylabel('Norm. Left Angle')
+            axs[2].plot(new_df['right_angle'], label=f'Subject {subject}')
+            
+            axs[2].set_ylabel('Norm. Right Angle')
+            axs[2].set_xlabel("Index")
+
+            axs[0].grid(True, which='both')
+            axs[1].grid(True, which='both')
+            axs[2].grid(True, which='both')
+
+        plt.subplots_adjust(wspace=0.05, hspace=0.05, top=0.90, right=0.98, bottom=0.08, left=0.05)
+        lines, labels = fig.axes[-1].get_legend_handles_labels()
+        fig.legend(lines, labels, loc = 'center right')
+
+
+        filename = f'control-{label}.png'
+        full_path = f'{diagram_folder}{filename}'
+
+        if save_new:
+            i = 0
+            while os.path.isfile(full_path):
+                i += 1
+                diag_file_name = f'control-{label}-{i}.png'
+                full_path = f'{diagram_folder}{diag_file_name}'
+
+        plt.savefig(full_path, bbox_inches='tight', dpi=300)
 
     plt.show()
+
+def main():
+    '''Run the script'''
+
+    # path to local storage directory
+    source_file_path = '/Users/jamesmeyer/University of Bath/Patient Simulator FYP - General/datasets/control/sitting-skeleton-txts/'
+
+    dest_file_path = '/Users/jamesmeyer/University of Bath/Patient Simulator FYP - General/datasets/control/'
+
+    DIAGRAM_FILE_PATH = '/Users/jamesmeyer/University of Bath/Patient Simulator FYP - General/diagrams/report/'
+
+    file_save = False
+
+    # _ = txt_extract_and_filter(source_file_path, dest_file_path, file_save)
+    # - = coords_to_angles(dest_file_path, file_save)
+    resamp_angle_df = resampler(30, 20, dest_file_path, file_save)
+    plot_control_actions(resamp_angle_df,DIAGRAM_FILE_PATH)
+    df = normaliser(resamp_angle_df, dest_file_path, file_save)
+    plot_norm_data(df, DIAGRAM_FILE_PATH)
+    # patient_df = derivatives(dest_file_path, file_save)
+    # display_deriv(patient_df)
+
+    
 
     # print(angle_df)
 
