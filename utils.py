@@ -6,13 +6,14 @@ import seaborn as sns
 from scipy import integrate
 from fastdtw import fastdtw
 from scipy.spatial.distance import euclidean
+import math
 # import tqdm
 
 import datetime
 import os.path
 
 
-def history_plot_and_save(history, ylimits, model_name, file_path, save_new=True):
+def history_plot_and_save(history, model_name, file_path, ylimits=None, save_new=True):
 
     # Show the history of loss
     plt.figure(figsize=(5, 8))
@@ -22,7 +23,8 @@ def history_plot_and_save(history, ylimits, model_name, file_path, save_new=True
 
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
-    plt.ylim(ylimits)
+    if ylimits is not None:
+        plt.ylim(ylimits)
     plt.title(f"Model Training - {model_name}")
     plt.legend()
     plt.subplots_adjust(wspace=0.05, hspace=0.05, top=0.95, right=0.98, bottom=0.08, left=0.05)
@@ -42,12 +44,22 @@ def history_plot_and_save(history, ylimits, model_name, file_path, save_new=True
 
     return plt
 
-def example_plot(eg_win, no_feats, win_size, x, xhat, model_name, file_path, save_on=True):
+def example_plot(eg_win, no_feats, win_size, x, xhat, model_name, file_path, docplot=2, save_on=True):
 
     train_plot = x[eg_win]
     predict_plot = xhat[eg_win]
     x_plot = list(range(win_size))
-    fig, axes = plt.subplots(no_feats, 1, figsize=(5, 8), sharey=True, sharex=True)
+
+    if docplot == 1:
+        plot_size = (16,8)
+    elif docplot == 2:
+        plot_size = (8,8)
+    elif docplot == 3:
+        plot_size = (5,8)
+    else:
+        plot_size = (5,8)
+
+    fig, axes = plt.subplots(no_feats, 1, figsize=plot_size, sharey=True, sharex=True)
 
     fig.suptitle(f"{eg_win}th Window - Original vs. Reconstructed Signal - {model_name}")
 
@@ -118,7 +130,7 @@ def error_computation(x, xhat, mode='MAE'):
                 print(f"{j}/{x.shape[0]}")
         error = np.array(area_diff)
     else:
-        pass
+        error = None
     return error
 
 def error_hist_and_save(error, mode, model_name, file_path, save_on=True):
@@ -147,11 +159,56 @@ def error_hist_and_save(error, mode, model_name, file_path, save_on=True):
 
     return plt
 
+
+def sig_fig_round(number, sig_fig):
+    rounded_number = round(number, sig_fig - int(math.floor(math.log10(abs(number)))) - 1)
+    return rounded_number
+
+def multiple_error_hist_plot_and_save(errors, modes, model_name, file_path, label_ypos, traintest, pct=None, save_new=True):
+
+    fig, axes = plt.subplots(len(modes), 1, figsize=(8, 8))
+    labels = ['Back Error', 'Left Error', 'Right Error']
+    thresholds = []
+    x = 0
+    for error, mode in zip(errors, modes):
+        y, _, _ = axes[x].hist(error, bins=30, label=labels)
+        axes[x].grid(True, which='both')
+        # axes[x].set_xlabel(mode)
+        axes[x].set_ylabel("Frequency")
+        x_text = np.amax(error)
+        axes[x].text(x_text, label_ypos, f'{mode}', horizontalalignment='center', fontsize=12)
+        if pct is not None:
+            # for pct in pcts:
+            thresh = fixed_thresh(pct, error, 1)
+            axes[x].plot([thresh[0], thresh[0]], [0, np.amax(y)], '--', label=f'{pct} * Max(Error)')
+            axes[x].text(thresh[0], int(np.amax(y)/2), f'{sig_fig_round(thresh[0], 3)}', horizontalalignment='right', fontsize=12)
+            thresholds.append(thresh[0])
+        x += 1
+
+    plt.subplots_adjust(wspace=0.15, hspace=0.15, top=0.95, right=0.98, bottom=0.08, left=0.05)
+
+    fig.suptitle(f"Different Types of {traintest} Error Distribution - {model_name}")
+    diag_file_name = f'hist-types-error-{model_name}.png'
+    full_path = f'{file_path}{diag_file_name}'
+    lines, labels = fig.axes[-1].get_legend_handles_labels()
+    fig.legend(lines, labels, loc = 'center right')
+
+    if save_new:
+        i = 0
+        while os.path.isfile(full_path):
+            i += 1
+            diag_file_name = f'hist-types-error-{model_name}-{i}.png'
+            full_path = f'{file_path}{diag_file_name}'
+    
+        plt.savefig(full_path, bbox_inches='tight', dpi=300)
+        print(f"Saved as: {full_path}")
+
+    return thresholds, plt
+
 def fixed_thresh(pct, error, train_len):
     thresh_err = [pct * np.amax(error)] * train_len #or Define 90% value of max as threshold.
     thresh_err = np.array(thresh_err).flatten()
     return thresh_err
-
 
 def anomaly_df(train, win_size, error, thresh):
     #Capture all details in a DataFrame for easy plotting
@@ -177,6 +234,47 @@ def mid_time(dt_tup):
 
     return mid
 
+def multiple_error_plot_and_save(dfs, modes, model_name, file_path, thresholds=None, save_new=True):
+    all_errors = pd.DataFrame()
+    for df, mode in zip(dfs, modes):
+        all_errors[mode] = df['error']
+    all_errors['Date'] = df['Date']
+
+    colours = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#7f7f7f']
+
+    fig, axes = plt.subplots(len(modes), 1, figsize=(8, 8), sharex=True)
+    x = 0
+    if thresholds is None:
+        thresholds = [0] * len(all_errors)
+        
+    for error_type, threshold in zip(modes, thresholds):
+        all_errors['Threshold'] = [threshold] * len(all_errors)
+        all_errors.plot(kind='line', x='Date', y=error_type, ax=axes[x], color=colours[x])
+        if thresholds is not None:
+            all_errors.plot(kind='line', x='Date', y='Threshold', ax=axes[x],color='red', linestyle='dashed')
+        axes[x].set_ylabel(error_type)
+        axes[x].grid(True, which='both')
+        x += 1
+
+    plt.subplots_adjust(wspace=0.05, hspace=0.05, top=0.95, right=0.98, bottom=0.08, left=0.05)
+    plt.grid(True, which='both')
+
+    fig.suptitle(f"Different Types of Test Reconstruction Error - {model_name}")
+    diag_file_name = f'types-error-{model_name}.png'
+    full_path = f'{file_path}{diag_file_name}'
+
+    if save_new:
+        i = 0
+        while os.path.isfile(full_path):
+            i += 1
+            diag_file_name = f'types-error-{model_name}-{i}.png'
+            full_path = f'{file_path}{diag_file_name}'
+    
+        plt.savefig(full_path, bbox_inches='tight', dpi=300)
+        print(f"Saved as: {full_path}")
+
+    return plt
+
 def error_vs_thresh_plot_and_save(df, mode, model_name, file_path, ylimits=None, pct=None, tstart=None, tend=None, regions=True, save_new=True):
     #Plot testMAE vs max_trainMAE
     if tstart is not None and tend is not None:
@@ -185,55 +283,70 @@ def error_vs_thresh_plot_and_save(df, mode, model_name, file_path, ylimits=None,
         # df['Date'] = pd.to_datetime(df['Date'])
         plot_df = df.loc[(df['Date'] >= tstart) & (df['Date'] <= tend)]
         time_slice = True
-        plt.figure(figsize=(5, 8))
+        plt.figure(figsize=(8, 8))
+        plt.xlim((tstart,tend))
     else:
         plot_df = df.copy(deep=True)
         time_slice = False
         plt.figure(figsize=(16, 8))
 
-        if regions:
+    if regions:
+        if ylimits is None:
             y_min = min(plot_df['error'])
             y_max = max(plot_df['error'])
+        else:
+            y_min = ylimits[0]
+            y_max = ylimits[1]
 
-            legs_anom3 = minutes(5,6)
-            plt.fill_between(legs_anom3, y_min, y_max, facecolor='yellow', alpha=0.2)
-            plt.text(mid_time(legs_anom3), 0.1, '1', horizontalalignment='center')
+        legs_anom3 = minutes(5,6)
+        plt.fill_between(legs_anom3, y_min, y_max, facecolor='yellow', alpha=0.2)
+        if tstart is None or mid_time(legs_anom3) > tstart:
+            plt.text(mid_time(legs_anom3), y_max-0.05, '1', horizontalalignment='center')
 
-            full_anom6 = minutes(6, 8)
-            plt.fill_between(full_anom6, y_min, y_max, facecolor='red', alpha=0.2)
-            plt.text(mid_time(full_anom6), 0.1, '2', horizontalalignment='center')
+        full_anom6 = minutes(6, 8)
+        plt.fill_between(full_anom6, y_min, y_max, facecolor='red', alpha=0.2)
+        if tstart is None or mid_time(full_anom6) > tstart:
+            plt.text(mid_time(full_anom6), y_max-0.05, '2', horizontalalignment='center')
 
-            full_anom1 = minutes(9, 16)
-            plt.fill_between(full_anom1, y_min, y_max, facecolor='orange', alpha=0.2)
-            plt.text(mid_time(full_anom1), 0.1, '3', horizontalalignment='center')
+        full_anom1 = minutes(9, 16)
+        plt.fill_between(full_anom1, y_min, y_max, facecolor='orange', alpha=0.2)
+        if tstart is None or mid_time(full_anom1) > tstart:
+            plt.text(mid_time(full_anom1), y_max-0.05, '3', horizontalalignment='center')
 
-            full_anom3 = minutes(17, 19)
-            plt.fill_between(full_anom3, y_min, y_max, facecolor='red', alpha=0.2)
-            plt.text(mid_time(full_anom3), 0.1, '4', horizontalalignment='center')
+        full_anom3 = minutes(17, 19)
+        plt.fill_between(full_anom3, y_min, y_max, facecolor='red', alpha=0.2)
+        if tstart is None or mid_time(full_anom3) > tstart:
+            plt.text(mid_time(full_anom3), y_max-0.05, '4', horizontalalignment='center')
 
-            legs_anom1 = minutes(20, 21)
-            plt.fill_between(legs_anom1, y_min, y_max, facecolor='yellow', alpha=0.2)
-            plt.text(mid_time(legs_anom1), 0.1, '5', horizontalalignment='center')
+        legs_anom1 = minutes(20, 21)
+        plt.fill_between(legs_anom1, y_min, y_max, facecolor='yellow', alpha=0.2)
+        if tstart is None or mid_time(legs_anom1) > tstart:
+            plt.text(mid_time(legs_anom1), y_max-0.05, '5', horizontalalignment='center')
 
-            full_anom5 = minutes(23, 25)
-            plt.fill_between(full_anom5, y_min, y_max, facecolor='red', alpha=0.2)
-            plt.text(mid_time(full_anom5), 0.1, '6', horizontalalignment='center')
+        full_anom5 = minutes(23, 25)
+        plt.fill_between(full_anom5, y_min, y_max, facecolor='red', alpha=0.2)
+        if tstart is None or mid_time(full_anom5) > tstart:
+            plt.text(mid_time(full_anom5), y_max-0.05, '6', horizontalalignment='center')
 
-            full_anom4 = minutes(25, 26)
-            plt.fill_between(full_anom4, y_min, y_max, facecolor='green', alpha=0.2)
-            plt.text(mid_time(full_anom4), 0.1, '7', horizontalalignment='center')
+        full_anom4 = minutes(25, 26)
+        plt.fill_between(full_anom4, y_min, y_max, facecolor='green', alpha=0.2)
+        if tstart is None or mid_time(full_anom4) > tstart:
+            plt.text(mid_time(full_anom4), y_max-0.05, '7', horizontalalignment='center')
 
-            legs_anom2 = minutes(26, 27)
-            plt.fill_between(legs_anom2, y_min, y_max, facecolor='yellow', alpha=0.2)
-            plt.text(mid_time(legs_anom2), 0.1, '8', horizontalalignment='center')
+        legs_anom2 = minutes(26, 27)
+        plt.fill_between(legs_anom2, y_min, y_max, facecolor='yellow', alpha=0.2)
+        if tstart is None or mid_time(legs_anom2) > tstart:
+            plt.text(mid_time(legs_anom2), y_max-0.05, '8', horizontalalignment='center')
 
-            full_anom2 = minutes(28, 32)
-            plt.fill_between(full_anom2, y_min, y_max, facecolor='red', alpha=0.2)
-            plt.text(mid_time(full_anom2), 0.1, '9', horizontalalignment='center')
+        full_anom2 = minutes(28, 32)
+        plt.fill_between(full_anom2, y_min, y_max, facecolor='red', alpha=0.2)
+        if tstart is None or mid_time(full_anom2) > tstart:
+            plt.text(mid_time(full_anom2), y_max-0.05, '9', horizontalalignment='center')
 
-            full_anom_fin = minutes(34, 36)
-            plt.fill_between(full_anom_fin, y_min, y_max, facecolor='red', alpha=0.2)
-            plt.text(mid_time(full_anom_fin), 0.1, '10', horizontalalignment='center')
+        full_anom_fin = minutes(34, 36)
+        plt.fill_between(full_anom_fin, y_min, y_max, facecolor='red', alpha=0.2)
+        if tstart is None or mid_time(full_anom_fin) > tstart:
+            plt.text(mid_time(full_anom_fin), y_max-0.05, '10', horizontalalignment='center')
 
     sns.lineplot(x=plot_df['Date'], y=plot_df['error'], label=mode)
     if pct is not None:
@@ -288,7 +401,7 @@ def detect_anom_plot_and_save(no_feats, sensors, df, anomalies, pct, mode, model
     plt.subplots_adjust(wspace=0.05, hspace=0.05, top=0.95, right=0.98, bottom=0.08, left=0.05)
     plt.grid(True, which='both')
 
-    fig.suptitle(f"Detected Anomalies - Fixed Threshold={pct} - {mode} - {model_name}")
+    fig.suptitle(f"Detected Anomalies - Fdixed Threshold={pct} - {mode} - {model_name}")
     plt.legend()
     diag_file_name = f'detected-anomalies-{pct}-{mode}-{model_name}.png'
     full_path = f'{file_path}{diag_file_name}'
@@ -452,3 +565,93 @@ def full_reconstruct_plot(df, mode, name, file_path, tstart=None, tend=None, sav
         print(f"Saved as: {full_path}")
 
     return plt
+
+def moving_thresholds(error_dfs, win_size_mult=3, step_size_mult=30, std_thresh_mult=4):
+    '''Function to calculate the moving threshold for each error inputted based on TadGAN method'''
+    T = error_dfs[0].shape[0]
+    # print(T)
+    half_win_size = int(T/(win_size_mult*2))
+    step_size = int(T/step_size_mult)
+    anomalies_df = []
+    for error_df in error_dfs:
+        # error_df["Threshold"] = [0.0] * T
+        for index in range(0, T-1, step_size):
+            if (index + half_win_size < T) and (index - half_win_size > 0): 
+                # print(f'{index - half_win_size}:{index + half_win_size}')
+                window = error_df['error'].iloc[index - half_win_size : index + half_win_size]
+                # print(window)
+            elif (index + half_win_size > T):
+                # print(f'{index - half_win_size}:{T}')
+                window = error_df['error'].iloc[index - half_win_size : T]
+                # print(window)
+            elif (index - half_win_size < 0):
+                # print(f'{0}:{index + half_win_size}')
+                window = error_df['error'].iloc[0 : index + half_win_size]
+                # print(window)
+            else:
+                print(f'UNKNOWN')
+
+            win_mean = window.mean()
+            win_std = window.std()
+            win_anom_thresh = win_mean + (win_std * std_thresh_mult)
+            # print(win_anom_thresh)
+
+            # print(f'{index}:{index+step_size}')
+            # print(index)
+            error_df.loc[index:index+step_size,['Threshold']] = win_anom_thresh
+            # print(index)
+            # print(error_df.loc[index:index+step_size,['Threshold']])
+        error_df['anomaly'] = (error_df['error'] > error_df['Threshold']) & (error_df['Threshold'] != 0)
+        anomalies_df.append(error_df.loc[error_df['anomaly'] == True])
+        # print(error_df)
+
+    
+    return error_dfs, anomalies_df
+
+def multiple_error_moving_thresh_plot_and_save(error_dfs, modes, model_name, file_path, save_new=True):
+    # all_errors = pd.DataFrame()
+    # for df, mode in zip(dfs, modes):
+    #     all_errors[mode] = df['error']
+    # all_errors['Date'] = df['Date']
+
+    colours = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#7f7f7f']
+    fig, axes = plt.subplots(len(error_dfs), 1, figsize=(16, 8), sharex=True)
+
+    x = 0
+    for error_df, error_type in zip(error_dfs, modes):
+        error_df.plot(kind='line', x='Date', y='error', ax=axes[x], color=colours[x], label=error_type)
+        error_df.plot(kind='line', x='Date', y='Threshold', ax=axes[x],color='red', linestyle='dashed')
+        axes[x].set_ylabel(error_type)
+        axes[x].grid(True, which='both')
+        x += 1
+
+    plt.subplots_adjust(wspace=0.05, hspace=0.05, top=0.95, right=0.98, bottom=0.08, left=0.05)
+    plt.grid(True, which='both')
+
+    fig.suptitle(f"Different Types of Test Reconstruction Error - {model_name}")
+    diag_file_name = f'types-error-{model_name}.png'
+    full_path = f'{file_path}{diag_file_name}'
+
+    if save_new:
+        i = 0
+        while os.path.isfile(full_path):
+            i += 1
+            diag_file_name = f'types-error-{model_name}-{i}.png'
+            full_path = f'{file_path}{diag_file_name}'
+    
+        plt.savefig(full_path, bbox_inches='tight', dpi=300)
+        print(f"Saved as: {full_path}")
+
+    return plt
+
+def anomaly_pruning(anomaly_dfs, theta=0.1):
+    '''At first, for each anomalous sequence, we use the maximum
+    anomaly score to represent it, obtaining a set of maximum
+    values {aimax, i = 1, 2, . . . , K}. Once these values are sorted
+    in descending order, we can compute the decrease percent
+    pi = (ai−1 max − ai max)/ai−1 max. When the first pi does not exceed
+    a certain threshold θ (by default θ = 0.1), we reclassify all
+    subsequent sequences (i.e., {aj seq, i ≤ j ≤ K}) as normal.'''
+
+    for anomaly_df in anomaly_dfs:
+        
