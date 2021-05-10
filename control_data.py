@@ -1,5 +1,6 @@
 '''A script to retrieve and prep the control data into a form ready for preprocessing steps'''
 
+# Import required libraries
 from ast import literal_eval
 import os.path
 import math
@@ -8,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.signal as sps
 from sklearn.preprocessing import MinMaxScaler
+pd.options.mode.chained_assignment = None
 
 def number_to_string(num_list):
     '''Basic function to aid with filename looping,
@@ -22,14 +24,12 @@ def number_to_string(num_list):
 
     return str_list
 
-def txt_extract_and_filter(s_file_path, d_file_path, save_on):
-    '''Runs the entire script to extract and filter data from .txts'''
+def txt_extract_and_filter(file_path):
+    '''Extracts and filters data from .txts'''
 
      # number of actions and subjects from the dataset
     action_nos = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 14]
     subject_nos = list(range(1,11))
-
-    print("\nExtracting the 3D skeleton points for all of the different subjects' correct actions\n")
 
     # list to append dicts to form df
     samples = []
@@ -40,10 +40,10 @@ def txt_extract_and_filter(s_file_path, d_file_path, save_on):
         for subject in number_to_string(subject_nos):
 
             # concat filename for extraction
-            file_name = f'a{action}_s{subject}_e01_skeleton.txt'
+            file_name = f'sitting-skeleton-txts/a{action}_s{subject}_e01_skeleton.txt'
 
             # Open file as list of lines
-            file_object = open(f'{s_file_path}{file_name}', 'r').readlines()
+            file_object = open(f'{file_path}{file_name}', 'r').readlines()
 
             frame_per_rows = []
             frame = []
@@ -108,21 +108,17 @@ def txt_extract_and_filter(s_file_path, d_file_path, save_on):
 
     samples_df = pd.DataFrame(samples)
 
-    print("Raw extracted and filtered skeletal 3D points")
-    print(samples_df)
-
-    if save_on:
-        new_file_name = 'coords_data.csv'
-        if os.path.exists(f'{d_file_path}{new_file_name}'):
-            print("csv created already, delete file if new version required")
-        else:
-            samples_df.to_csv(f'{d_file_path}{new_file_name}',index=False)
-            print(f'Saved a copy as csv in :{d_file_path}')
+    new_file_name = 'coords_data.csv'
+    if os.path.exists(f'{file_path}{new_file_name}'):
+        print(f"{new_file_name} created already, delete file if new version required")
+    else:
+        samples_df.to_csv(f'{file_path}{new_file_name}',index=False)
+        print(f'Saved a copy as csv in :{file_path}{new_file_name}')
 
     return samples_df
 
 def vectors_to_angle(vec1, vec2):
-    '''Takes to vectors and calculates the angle between them'''
+    '''Takes two vectors and calculates the angle between them'''
 
     unit_vec1 = vec1 / np.linalg.norm(vec1)
     unit_vec2 = vec2 / np.linalg.norm(vec2)
@@ -131,8 +127,8 @@ def vectors_to_angle(vec1, vec2):
 
     return (angle/math.pi) * 180
 
-def coords_to_angles(file_path, save_on):
-    '''Runs the entire script to convert 3D positions to angles'''
+def coords_to_angles(file_path):
+    '''Converts 3D positions to angles'''
 
     file_name = 'coords_data.csv'
     df = pd.read_csv(f'{file_path}{file_name}', index_col=False)
@@ -140,8 +136,6 @@ def coords_to_angles(file_path, save_on):
     back_angle = []
     left_angle = []
     right_angle = []
-
-    print("\nConverting the 3D skeleton points to the corresponding angles\n")
 
     # loop through each row
     for _, row in df.iterrows():
@@ -174,36 +168,23 @@ def coords_to_angles(file_path, save_on):
         right_angle.append(vectors_to_angle(rh_pelvis_tp_pelvis, rh_pelvis_rh_knee))
 
     columns_add = ['back_angle', 'left_angle', 'right_angle']
-      
+    
+    angle_df = df.copy(deep=True)
     # Add columns to df
-    df[columns_add[0]] = back_angle
-    df[columns_add[1]] = left_angle
-    df[columns_add[2]] = right_angle
+    angle_df[columns_add[0]] = back_angle
+    angle_df[columns_add[1]] = left_angle
+    angle_df[columns_add[2]] = right_angle
+    
+    angle_df.drop(labels=['neck','bt_spine','tp_pelvis','lf_pelvis','lf_knee','rh_pelvis','rh_knee'], inplace=True, axis=1)
 
     # Transform the values from the obtuse to acute
     for col in columns_add:
-        df[col] = 180 - df[col]
+        angle_df[col] = 180 - angle_df[col]
 
-    print("Corresponding angles between skeleton coordinates")
-    print(df)
+    return angle_df
 
-    if save_on:
-        new_file_name = 'angles_data.csv'
-        if os.path.exists(f'{file_path}{new_file_name}'):
-            print("csv created already, delete file if new version required")
-        else:
-            df.to_csv(f'{file_path}{new_file_name}',index=False)
-            print(f'Saved a copy as csv in :{file_path}')
-
-    return df
-
-def resampler(old_hz, new_hz, file_path, save_on):
-    '''Script to resample data from 30Hz to 20Hz'''
-
-    file_name = 'angles_data.csv'
-    df = pd.read_csv(f'{file_path}{file_name}',index_col=False)
-
-    print(f"\nResampling the data from {old_hz}Hz to {new_hz}Hz \n")
+def resampler(df, old_hz=30, new_hz=20):
+    '''Resamples data from 30Hz to 20Hz'''
 
     # Loop through each action and subject
     action_nos = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 14]
@@ -251,94 +232,12 @@ def resampler(old_hz, new_hz, file_path, save_on):
             append_df['left_angle'] = left_angle_resamp
             append_df['right_angle'] = right_angle_resamp
 
-            resamp_df = resamp_df.append(append_df, ignore_index = True)
-
-    print(f"Resampled {new_hz}Hz corresponding angles between skeleton coordinates")
-    print(resamp_df)
-
-    if save_on:
-        new_file_name = 'resampled_angles_data.csv'
-        if os.path.exists(f'{file_path}{new_file_name}'):
-            print("csv created already, delete file if new version required")
-        else:
-            resamp_df.to_csv(f'{file_path}{new_file_name}',index=False)
-            print(f'Saved a copy as csv in :{file_path}')
+            resamp_df = resamp_df.append(append_df, ignore_index=True)
 
     return resamp_df
 
-def compute_angle_derivs(angle_df, window_size, polyorder, deriv):
-    '''Compute the angle derivs and return expanded df'''
-
-    new_angle_df = angle_df.copy()
-
-    new_angle_df[f'back_{deriv}der'] = sps.savgol_filter(
-        angle_df['back_angle'],
-        window_length=window_size,
-        polyorder=polyorder,
-        deriv=deriv
-        )
-
-    new_angle_df[f'left_{deriv}der'] = sps.savgol_filter(
-        angle_df['left_angle'],
-        window_length=window_size,
-        polyorder=polyorder,
-        deriv=deriv
-        )
-
-    new_angle_df[f'right_{deriv}der'] = sps.savgol_filter(
-        angle_df['right_angle'],
-        window_length=window_size,
-        polyorder=polyorder,
-        deriv=deriv
-        )
-
-    return new_angle_df
-
-def derivatives(file_path, save_on):
-    '''Script to calculate the deriv of the angles computed'''
-
-    file_name = 'normal_data.csv'
-    df = pd.read_csv(f'{file_path}{file_name}', index_col=False)
-
-    print("\nCalculating the first and second derivatives for the angles\n")
-
-    # Loop through each action and plot the angles
-    action_nos = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 14]
-    subject_nos = list(range(1,11))
-
-    angle_derivs_df = pd.DataFrame()
-
-    for action in action_nos:
-
-        for subject in subject_nos:
-
-            angle_df = df.loc[
-                (df['action'] == action) & (df['subject'] == subject)]
-
-            for deriv in [1,2]:
-
-                window_size = 5
-                polyorder = 2
-                angle_df = compute_angle_derivs(angle_df, window_size, polyorder, deriv)
-
-            angle_derivs_df = angle_derivs_df.append(angle_df)
-
-   
-    print("First and second derivatives of angles")
-    print(angle_derivs_df)
-
-    if save_on:
-        new_file_name = 'control_data.csv'
-        if os.path.exists(f'{file_path}{new_file_name}'):
-            print("csv created already, delete file if new version required")
-        else:
-            angle_derivs_df.to_csv(f'{file_path}{new_file_name}',index=False)
-            print(f'Saved a copy as csv in :{file_path}')
-
-    return angle_derivs_df
-
-def display_deriv(df):
-    '''Script to plot the deriv of the angles computed'''
+def plot_control_actions(df, diagram_folder, save_new=True):
+    '''Plots each of the control actions angles for all of the subjects'''
 
     # Loop through each action and plot the angles
     action_nos = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 14]
@@ -346,49 +245,52 @@ def display_deriv(df):
     action_type = ['Drinking', 'Eating', 'Reading', 'Phoning', 'Writing', 'Laptop', 'Cheering', 'Nothing', 'Throwing a ball', 'Playing a video game', 'Playing a guitar']
 
     for action, label in zip(action_nos, action_type):
-            
-        fig, axs = plt.subplots(3, 3)
-        fig.suptitle(f'Action: {action} - {label}')
+
+        fig, axs = plt.subplots(3, 1, sharey=True, figsize=(8, 8))
+        fig.suptitle("MSR DailyActivity3D Processed Angles - Control Data")
 
         for subject in subject_nos:
 
-            angle_df = df.loc[
+            new_df = df.loc[
                 (df['action'] == action) & (df['subject'] == subject)]
+        
+            axs[0].set_title(f"Control Data - Action: {label}")
 
-            axs[0, 0].plot(angle_df['back_angle'])
-            axs[0, 0].set_ylabel('Angle (deg)')
-            axs[0, 0].set_title('Back')
-            axs[0, 1].plot(angle_df['left_angle'])
-            axs[0, 2].plot(angle_df['right_angle'])
+            axs[0].plot(new_df['back_angle'])
+            axs[0].set_ylabel('Back Angle (Deg)')
 
-            deriv = 1
+            axs[1].plot(new_df['left_angle'])
+            axs[1].set_ylabel('Left Angle (Deg)')
+            axs[2].plot(new_df['right_angle'], label=f'Subject {subject}')
+            
+            axs[2].set_ylabel('Right Angle (Deg)')
+            axs[2].set_xlabel("Index")
 
-            axs[1, 0].plot(angle_df[f'back_{deriv}der'])
-            axs[1, 1].plot(angle_df[f'left_{deriv}der'])
-            axs[1, 0].set_ylabel('1st Deriv Angle (deg/s)')
-            axs[0, 1].set_title('Left')
-            axs[1, 2].plot(angle_df[f'right_{deriv}der'])
+            axs[0].grid(True, which='both')
+            axs[1].grid(True, which='both')
+            axs[2].grid(True, which='both')
 
-            deriv = 2
-
-            axs[2, 0].plot(angle_df[f'back_{deriv}der'])
-            axs[2, 1].plot(angle_df[f'left_{deriv}der'])
-            axs[2, 2].plot(angle_df[f'right_{deriv}der'], label=f'Subject {subject}')
-            axs[2, 0].set_ylabel('2nd Deriv Angle (deg/s^2)')
-            axs[0, 2].set_title('Right')
-
+        plt.subplots_adjust(wspace=0.05, hspace=0.05, top=0.90, right=0.98, bottom=0.08, left=0.05)
         lines, labels = fig.axes[-1].get_legend_handles_labels()
         fig.legend(lines, labels, loc = 'center right')
 
+
+        filename = f'control-{label}.png'
+        full_path = f'{diagram_folder}{filename}'
+
+        if save_new:
+            i = 0
+            while os.path.isfile(full_path):
+                i += 1
+                diag_file_name = f'control-{label}-{i}.png'
+                full_path = f'{diagram_folder}{diag_file_name}'
+
+            plt.savefig(full_path, bbox_inches='tight', dpi=300)
+
     plt.show()
 
-def normaliser(df, file_path, save_on):
-    '''Script to individually normalise the angles computed for each subject's action'''
-
-    # file_name = 'resampled_angles_data.csv'
-    # df = pd.read_csv(f'{file_path}{file_name}', index_col=False)
-
-    # print("\nCalculating the first and second derivatives for the angles\n")
+def control_normaliser(df):
+    '''Individually normalise the angles computed for each subject's action'''
 
     # Loop through each action and plot the angles
     action_nos = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 14]
@@ -412,21 +314,10 @@ def normaliser(df, file_path, save_on):
 
             normal_angles_df = normal_angles_df.append(angles_df)
 
-   
-    print("Normalised angles")
-    print(normal_angles_df)
-
-    if save_on:
-        new_file_name = 'normal_data.csv'
-        if os.path.exists(f'{file_path}{new_file_name}'):
-            print("csv created already, delete file if new version required")
-        else:
-            normal_angles_df.to_csv(f'{file_path}{new_file_name}',index=False)
-            print(f'Saved a copy as csv in :{file_path}')
-
     return normal_angles_df
 
-def plot_norm_data(df, diagram_folder, save_new=True):
+def plot_control_norm_data(df, diagram_folder, save_new=True):
+    '''Plots the entire normalised control dataset on the same axes'''
 
     # Loop through each action and plot the angles
     action_nos = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 14]
@@ -479,12 +370,77 @@ def plot_norm_data(df, diagram_folder, save_new=True):
             i += 1
             diag_file_name = f'control-norm-{i}.png'
             full_path = f'{diagram_folder}{diag_file_name}'
+        plt.savefig(full_path, bbox_inches='tight', dpi=300)
 
-
-    plt.savefig(full_path, bbox_inches='tight', dpi=300)
     plt.show()
 
-def plot_control_actions(df, diagram_folder, save_new=True):
+def save_proc_control_df(df, file_path):
+    '''Save the preprocess data as a csv'''
+
+    new_file_name = 'control_data.csv'
+
+    if os.path.exists(f'{file_path}{new_file_name}'):
+        print(f"{new_file_name} created already, delete file if new version required")
+    else:
+        df.to_csv(f'{file_path}{new_file_name}',index=False)
+        print(f"Saved as: {file_path}{new_file_name}")
+
+def compute_angle_derivs(angle_df, window_size, polyorder, deriv):
+    '''Compute the angle derivs and return expanded df'''
+
+    new_angle_df = angle_df.copy()
+
+    new_angle_df[f'back_{deriv}der'] = sps.savgol_filter(
+        angle_df['back_angle'],
+        window_length=window_size,
+        polyorder=polyorder,
+        deriv=deriv
+        )
+
+    new_angle_df[f'left_{deriv}der'] = sps.savgol_filter(
+        angle_df['left_angle'],
+        window_length=window_size,
+        polyorder=polyorder,
+        deriv=deriv
+        )
+
+    new_angle_df[f'right_{deriv}der'] = sps.savgol_filter(
+        angle_df['right_angle'],
+        window_length=window_size,
+        polyorder=polyorder,
+        deriv=deriv
+        )
+
+    return new_angle_df
+
+def control_angle_derivatives(df):
+    '''Calculate the deriv of the angles computed'''
+
+    # Loop through each action and plot the angles
+    action_nos = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 14]
+    subject_nos = list(range(1,11))
+
+    angle_derivs_df = pd.DataFrame()
+
+    for action in action_nos:
+
+        for subject in subject_nos:
+
+            angle_df = df.loc[
+                (df['action'] == action) & (df['subject'] == subject)]
+
+            for deriv in [1,2]:
+
+                window_size = 5
+                polyorder = 2
+                angle_df = compute_angle_derivs(angle_df, window_size, polyorder, deriv)
+
+            angle_derivs_df = angle_derivs_df.append(angle_df)
+
+    return angle_derivs_df
+
+def control_display_derivs(df):
+    '''Plots the deriv of the angles computed'''
 
     # Loop through each action and plot the angles
     action_nos = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 14]
@@ -492,83 +448,80 @@ def plot_control_actions(df, diagram_folder, save_new=True):
     action_type = ['Drinking', 'Eating', 'Reading', 'Phoning', 'Writing', 'Laptop', 'Cheering', 'Nothing', 'Throwing a ball', 'Playing a video game', 'Playing a guitar']
 
     for action, label in zip(action_nos, action_type):
-
-        fig, axs = plt.subplots(3, 1, sharey=True, figsize=(8, 8))
-        fig.suptitle("MSR DailyActivity3D Processed Angles - Control Data")
+            
+        fig, axs = plt.subplots(3, 3)
+        fig.suptitle(f'Action: {action} - {label}')
 
         for subject in subject_nos:
 
-            new_df = df.loc[
+            angle_df = df.loc[
                 (df['action'] == action) & (df['subject'] == subject)]
 
-        
-            axs[0].set_title(f"Control Data - Action: {label}")
+            axs[0, 0].plot(angle_df['back_angle'])
+            axs[0, 0].set_ylabel('Angle (deg)')
+            axs[0, 0].set_title('Back')
+            axs[0, 1].plot(angle_df['left_angle'])
+            axs[0, 2].plot(angle_df['right_angle'])
 
-            axs[0].plot(new_df['back_angle'])
-            axs[0].set_ylabel('Norm. Back Angle')
+            deriv = 1
 
-            axs[1].plot(new_df['left_angle'])
-            axs[1].set_ylabel('Norm. Left Angle')
-            axs[2].plot(new_df['right_angle'], label=f'Subject {subject}')
-            
-            axs[2].set_ylabel('Norm. Right Angle')
-            axs[2].set_xlabel("Index")
+            axs[1, 0].plot(angle_df[f'back_{deriv}der'])
+            axs[1, 1].plot(angle_df[f'left_{deriv}der'])
+            axs[1, 0].set_ylabel('1st Deriv Angle (deg/s)')
+            axs[0, 1].set_title('Left')
+            axs[1, 2].plot(angle_df[f'right_{deriv}der'])
 
-            axs[0].grid(True, which='both')
-            axs[1].grid(True, which='both')
-            axs[2].grid(True, which='both')
+            deriv = 2
 
-        plt.subplots_adjust(wspace=0.05, hspace=0.05, top=0.90, right=0.98, bottom=0.08, left=0.05)
+            axs[2, 0].plot(angle_df[f'back_{deriv}der'])
+            axs[2, 1].plot(angle_df[f'left_{deriv}der'])
+            axs[2, 2].plot(angle_df[f'right_{deriv}der'], label=f'Subject {subject}')
+            axs[2, 0].set_ylabel('2nd Deriv Angle (deg/s^2)')
+            axs[0, 2].set_title('Right')
+
         lines, labels = fig.axes[-1].get_legend_handles_labels()
         fig.legend(lines, labels, loc = 'center right')
-
-
-        filename = f'control-{label}.png'
-        full_path = f'{diagram_folder}{filename}'
-
-        if save_new:
-            i = 0
-            while os.path.isfile(full_path):
-                i += 1
-                diag_file_name = f'control-{label}-{i}.png'
-                full_path = f'{diagram_folder}{diag_file_name}'
-
-        plt.savefig(full_path, bbox_inches='tight', dpi=300)
 
     plt.show()
 
 def main():
     '''Run the script'''
 
-    # path to local storage directory
-    source_file_path = '/Users/jamesmeyer/University of Bath/Patient Simulator FYP - General/datasets/control/sitting-skeleton-txts/'
+    # Set constants and settings
+    FILE_DIR = '../patient-simulator-FYP/'
+    DIAGRAM_DIR = FILE_DIR + 'diagrams/'
+    DATA_DIR = FILE_DIR + 'datasets/'
+    CONTROL_DIR = DATA_DIR + 'control/'
+    plot_on = True
+    save_new = False
 
-    dest_file_path = '/Users/jamesmeyer/University of Bath/Patient Simulator FYP - General/datasets/control/'
+    # Extract the 3D coords from relevant .txt files
+    _ = txt_extract_and_filter(CONTROL_DIR)
 
-    DIAGRAM_FILE_PATH = '/Users/jamesmeyer/University of Bath/Patient Simulator FYP - General/diagrams/report/'
+    # Compute the angles from the corresponding files
+    control_angles_df = coords_to_angles(CONTROL_DIR)
 
-    file_save = False
+    # Resample the data to match patient data
+    control_resamp_angles_df = resampler(control_angles_df, 30, 20)
 
-    # _ = txt_extract_and_filter(source_file_path, dest_file_path, file_save)
-    # - = coords_to_angles(dest_file_path, file_save)
-    resamp_angle_df = resampler(30, 20, dest_file_path, file_save)
-    plot_control_actions(resamp_angle_df,DIAGRAM_FILE_PATH)
-    df = normaliser(resamp_angle_df, dest_file_path, file_save)
-    plot_norm_data(df, DIAGRAM_FILE_PATH)
-    # patient_df = derivatives(dest_file_path, file_save)
-    # display_deriv(patient_df)
+    if plot_on:
+        # Plot sets of control actions
+        plot_control_actions(control_resamp_angles_df, DIAGRAM_DIR, save_new=save_new)
 
-    
+    # Normalise angles to preprocess before windowing
+    control_norm_df = control_normaliser(control_resamp_angles_df)
 
-    # print(angle_df)
+    if plot_on:
+        # Plot normalised angles
+        plot_control_norm_data(control_norm_df, DIAGRAM_DIR, save_new=save_new)
 
+    # Save a copy of preprocessed data as .csv
+    save_proc_control_df(control_norm_df, CONTROL_DIR)
 
-    # axes = angle_df[['back_angle', 'left_angle', 'right_angle', 'datetime']].plot(subplots=True, kind='line', x='datetime', legend=False) 
-    # axes[0].set_title("Processed MSR DailyActivity3D Angle - Control Data")
-
-  
-
-    # plt.show()
+    ### NO LONGER INCLUDED IN THE PIPELINE ###
+    ## control_derivs_df = control_angle_derivatives(control_norm_df)
+    ## if plot_on:
+    ##     control_display_derivs(control_derivs_df)
 
 if __name__ == "__main__":
     main()
