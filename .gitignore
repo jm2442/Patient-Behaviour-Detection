@@ -133,4 +133,4 @@ dmypy.json
 
 ### VisualStudioCode ###
 .vscode/
-!.vscode/settings.json
+.vscode/settings.json
