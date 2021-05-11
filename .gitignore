@@ -130,3 +130,7 @@ dmypy.json
 
 # Storage files
 .png 
+
+### VisualStudioCode ###
+.vscode/
+!.vscode/settings.json
