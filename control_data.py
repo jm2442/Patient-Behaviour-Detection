@@ -488,9 +488,8 @@ def main():
     '''Run the script'''
 
     # Set constants and settings
-    FILE_DIR = '../patient-simulator-FYP/'
-    DIAGRAM_DIR = FILE_DIR + 'diagrams/'
-    DATA_DIR = FILE_DIR + 'datasets/'
+    DIAGRAM_DIR = 'diagrams/'
+    DATA_DIR = 'datasets/'
     CONTROL_DIR = DATA_DIR + 'control/'
     plot_on = True
     save_new = False
