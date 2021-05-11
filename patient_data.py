@@ -85,10 +85,10 @@ def backlock_remover(df, start_index, end_index, backlock_on):
     '''Remove period of backrest lock to prevent bias'''
 
     new_df = df.copy(deep=True)
-    if backlock_on ==False:
+    if backlock_on is False:
         drop_range = list(range(start_index, end_index+1))
         new_df.drop(new_df.index[drop_range], inplace=True)
-        new_df.reset_index(inplace=True)
+        new_df.reset_index(drop=True, inplace=True)
 
     return new_df
 
