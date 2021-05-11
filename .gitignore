@@ -129,5 +129,8 @@ dmypy.json
 .pyre/
 
 # Storage files
-.txt
-.csv
+.png 
+
+### VisualStudioCode ###
+.vscode/
+!.vscode/settings.json

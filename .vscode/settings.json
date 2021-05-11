@@ -1,9 +1,13 @@
 {
     "files.associations": {
-        "python.pythonPath": "/Users/jamesmeyer/.pyenv/versions/3.9.0/envs/fyp-env/bin/python"
+        "python.pythonPath": "/Users/jamesmeyer/.pyenv/versions/3.7.10/envs/fyp-env/bin/python"
     },
     "python.linting.pylintEnabled": true,
     "python.linting.enabled": true,
-    "python.linting.pylintPath": "/Users/jamesmeyer/.pyenv/versions/3.9.0/envs/fyp-env/bin/pylint",
-    "python.linting.pylintArgs": ["--disable={C0111}"]
+    "python.linting.pylintPath": "/Users/jamesmeyer/.pyenv/versions/3.7.10/envs/fyp-env/bin/pylint",
+    "python.linting.pylintArgs": [
+        "--disable={C0111}"
+    ],
+    "python.pythonPath": "/Users/jamesmeyer/.pyenv/versions/fyp-env/bin/python",
+    "jupyter.jupyterServerType": "local"
 }
