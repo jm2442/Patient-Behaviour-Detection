@@ -131,7 +131,7 @@ def moving_thresholds(error_dfs, win_size_mult=3, step_size_mult=30, std_thresh_
             elif (index - half_win_size < 0):
                 window = moving_error_df['error'].iloc[0 : index + half_win_size]
             else:
-                print(f'UNKNOWN')
+                print('UNKNOWN')
             # Using window's statistics, calculate its specific threshold
             win_mean = window.mean()
             win_std = window.std()
@@ -209,7 +209,7 @@ def anomaly_pruning(error_dfs, theta=0.1):
         for anom_index in final_anomalies:
             anom_indexes.extend(anom_index[:,0])
         # Logic to change anomaly values that were set as true by adaptive window
-        for index, row in error_df.iterrows():
+        for index, _ in error_df.iterrows():
             if index in anom_indexes:
                 retained_anomaly_df['anomaly'].loc[index] = True
             else:
@@ -548,7 +548,6 @@ def final_detection_plot_and_save(df, anomaly_dfs, methods, model_name,file_path
     else:
         y_heights = [2.5, 5, 7.5, 10]
     markers = ['v', 'v', 'v', 'v']
-    zorders = [5, 10, 15, 20]
     # Plot detected anomalies using markers
     x = 0
     for anomaly in anomaly_dfs:
